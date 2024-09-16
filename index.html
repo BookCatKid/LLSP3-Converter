@@ -3,136 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LLSP3 to Python Converter</title>
+  <title>LLSP3 File Converter</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
   <style>
-    #image-frame {
-      background-color: white;
-      width: 150px;
-      height: 350px;
+    body {
+      background-color: #f0f2f5;
+      font-family: Arial, sans-serif;
     }
-    #image-frame img {
-      width: 150px;
-      height: 325px;
+    .container {
+      max-width: 600px;
+      margin-top: 50px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      position: relative;
     }
-    .content-frame {
-      background-color: white;
+    .cat-image {
+      position: absolute;
+      width: 30%;
+      height: auto;
+      top: 10px;
     }
-    .radio-buttons {
+    .cat-left {
+      left: 10px;
+    }
+    .cat-right {
+      right: 10px;
+    }
+    .cat-right-bottom {
+      right: 10px;
+      top: 250px;
+    }
+    #result_block {
+      margin-top: 20px;
+    }
+    #result {
       margin-bottom: 20px;
     }
-    .description {
-      white-space: pre-wrap;
+    .alert {
+      margin-top: 20px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .cat-image {
+        position: relative;
+        width: 80%;
+        height: auto;
+        margin: 10px auto;
+      }
+      .cat-left, .cat-right {
+        display: none;
+      }
+      .cat-right-bottom {
+        display: block;
+        position: relative;
+        margin: 20px auto;
+      }
     }
   </style>
 </head>
 <body>
-
-<div class="container mt-4">
-  <div class="row">
-    <!-- Image Panel -->
-    <div id="image-frame" class="col-md-3">
-      <img id="image" src="" alt="Image will appear here">
-    </div>
-
-    <!-- Content Panel -->
-    <div class="col-md-9 content-frame">
-      <h3 class="mb-3">LLSP3 to Python Converter</h3>
-      <p class="description">
-        To convert your files, please select either a single file or a whole directory. 
-        Click "Browse" to choose the file or directory, and click "Convert"!
-      </p>
-
-      <!-- Radio Buttons -->
-      <div class="radio-buttons">
-        <div class="form-check">
-          <input class="form-check-input" type="radio" name="fileType" id="singleFile" value="file" checked>
-          <label class="form-check-label" for="singleFile">Single File</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="radio" name="fileType" id="directory" value="directory">
-          <label class="form-check-label" for="directory">Whole Directory</label>
-        </div>
-      </div>
-
-      <!-- Buttons -->
-      <div class="mt-4">
-        <button class="btn btn-primary" id="browseButton">Browse</button>
-        <button class="btn btn-success" id="convertButton">Convert</button>
-        <button class="btn btn-danger" id="cancelButton">Cancel</button>
-      </div>
+  <img src="https://i0.wp.com/www.communitycatspodcast.com/wp-content/uploads/2023/03/Cat6.jpg?fit=800%2C800&ssl=1" alt="Cat Image" class="cat-image cat-left">
+  <img src="https://www.purina-arabia.com/sites/default/files/2020-12/Caring%20For%20a%20Newborn%20KittenTEASER.jpg" alt="Cat Image" class="cat-image cat-right">
+  <img src="https://cdn.prod.website-files.com/62604bb9b6d9d12008ba1216/627d0cbe0c5bbd447a635839_new-kitten-checklist.jpg" alt="Cat Image" class="cat-image cat-right-bottom">
+  
+  <div class="container">
+    <h3>LLSP3 File Converter</h3>
+    <input type="file" id="file" accept=".llsp3" class="form-control mb-4" />
+    <div id="result_block" class="hidden">
+      <div id="result"></div>
+      <button id="download-btn" class="btn btn-primary hidden" disabled>Download Python Code</button>
     </div>
   </div>
-</div>
 
-<!-- Script -->
-<script>
-  // Function to fetch and crop image from a URL
-  function fetchAndCropImage(url, targetWidth, targetHeight) {
-    fetch(url)
-      .then(response => response.blob())
-      .then(blob => {
-        const img = new Image();
-        const imgUrl = URL.createObjectURL(blob);
-        img.src = imgUrl;
-        img.onload = () => {
-          const aspectRatio = targetWidth / targetHeight;
-          let canvas = document.createElement('canvas');
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
-          let ctx = canvas.getContext('2d');
+  <script>
+    var $result = document.getElementById("result");
+    var $downloadBtn = document.getElementById("download-btn");
+    var pythonCode = "";
+    var fileName = "";
 
-          const imgWidth = img.width;
-          const imgHeight = img.height;
-          let sx, sy, sWidth, sHeight;
+    document.getElementById("file").addEventListener("change", function(evt) {
+      // Clear previous content
+      $result.innerHTML = "";
+      $downloadBtn.classList.add("hidden"); // Hide download button
+      $downloadBtn.disabled = true; // Disable download button
+      document.getElementById("result_block").classList.remove("hidden");
+      document.getElementById("result_block").classList.add("show");
 
-          if (imgWidth / imgHeight > aspectRatio) {
-            sHeight = imgHeight;
-            sWidth = imgHeight * aspectRatio;
-            sx = (imgWidth - sWidth) / 2;
-            sy = 0;
-          } else {
-            sWidth = imgWidth;
-            sHeight = imgWidth / aspectRatio;
-            sx = 0;
-            sy = (imgHeight - sHeight) / 2;
-          }
+      // Function to handle the selected file
+      function handleFile(f) {
+        var title = document.createElement("h4");
+        title.textContent = f.name;
+        $result.appendChild(title);
 
-          ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight);
-          document.getElementById('image').src = canvas.toDataURL();
-        };
-      })
-      .catch(err => {
-        console.error("Error fetching image", err);
-      });
-  }
+        var dateBefore = new Date();
+        JSZip.loadAsync(f)
+          .then(function(zip) {
+            var dateAfter = new Date();
+            var timeTaken = document.createElement("span");
+            timeTaken.className = "small";
+            timeTaken.textContent = " (loaded in " + (dateAfter - dateBefore) + "ms)";
+            title.appendChild(timeTaken);
 
-  // Initial image fetch
-  const imageUrl = "https://images.unsplash.com/photo-1529778873920-4da4926a72c2?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y3V0ZSUyMGNhdHxlbnwwfHwwfHx8MA%3D%3D";
-  fetchAndCropImage(imageUrl, 150, 325);
+            var foundProjectBody = false;
 
-  // Browse button event listener
-  document.getElementById('browseButton').addEventListener('click', () => {
-    const fileType = document.querySelector('input[name="fileType"]:checked').value;
-    if (fileType === 'file') {
-      // Trigger file selection dialog
-      alert("Open file dialog for single file (This needs file input in a real scenario)");
-    } else if (fileType === 'directory') {
-      // Trigger directory selection dialog
-      alert("Open directory selection dialog (This needs directory selection in a real scenario)");
-    }
-  });
+            zip.forEach(function(relativePath, zipEntry) {
+              if (zipEntry.name === "projectbody.json") {
+                foundProjectBody = true;
+                zipEntry.async("string").then(function(content) {
+                  pythonCode = JSON.parse(content).main;
+                  fileName = f.name.replace(/\.llsp3$/, '.py');
 
-  // Convert button event listener
-  document.getElementById('convertButton').addEventListener('click', () => {
-    alert("Processing conversion (Implement your logic here)");
-  });
+                  // Show and enable the download button
+                  $downloadBtn.classList.remove("hidden");
+                  $downloadBtn.disabled = false;
+                });
+              }
+            });
 
-  // Cancel button event listener
-  document.getElementById('cancelButton').addEventListener('click', () => {
-    window.close();  // Close the window (for desktop apps or browser)
-  });
-</script>
+            if (!foundProjectBody) {
+              var errorDiv = document.createElement("div");
+              errorDiv.className = "alert alert-warning";
+              errorDiv.textContent = "No 'projectbody.json' found in this archive.";
+              $result.appendChild(errorDiv);
 
+              // Hide and disable the download button
+              $downloadBtn.classList.add("hidden");
+              $downloadBtn.disabled = true;
+            }
+          })
+          .catch(function(e) {
+            var errorDiv = document.createElement("div");
+            errorDiv.className = "alert alert-danger";
+            errorDiv.textContent = "Error reading " + f.name + ": " + e.message;
+            $result.appendChild(errorDiv);
+
+            // Hide and disable the download button
+            $downloadBtn.classList.add("hidden");
+            $downloadBtn.disabled = true;
+          });
+      }
+
+      var files = evt.target.files;
+      for (var i = 0; i < files.length; i++) {
+        handleFile(files[i]);
+      }
+    });
+
+    // Function to trigger the download of Python code
+    $downloadBtn.addEventListener("click", function() {
+      var blob = new Blob([pythonCode], { type: "text/plain" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  </script>
 </body>
 </html>

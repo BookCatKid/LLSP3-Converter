@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLSP3 to Python Converter</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    #image-frame {
+      background-color: white;
+      width: 150px;
+      height: 350px;
+    }
+    #image-frame img {
+      width: 150px;
+      height: 325px;
+    }
+    .content-frame {
+      background-color: white;
+    }
+    .radio-buttons {
+      margin-bottom: 20px;
+    }
+    .description {
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container mt-4">
+  <div class="row">
+    <!-- Image Panel -->
+    <div id="image-frame" class="col-md-3">
+      <img id="image" src="" alt="Image will appear here">
+    </div>
+
+    <!-- Content Panel -->
+    <div class="col-md-9 content-frame">
+      <h3 class="mb-3">LLSP3 to Python Converter</h3>
+      <p class="description">
+        To convert your files, please select either a single file or a whole directory. 
+        Click "Browse" to choose the file or directory, and click "Convert"!
+      </p>
+
+      <!-- Radio Buttons -->
+      <div class="radio-buttons">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="fileType" id="singleFile" value="file" checked>
+          <label class="form-check-label" for="singleFile">Single File</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="fileType" id="directory" value="directory">
+          <label class="form-check-label" for="directory">Whole Directory</label>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="mt-4">
+        <button class="btn btn-primary" id="browseButton">Browse</button>
+        <button class="btn btn-success" id="convertButton">Convert</button>
+        <button class="btn btn-danger" id="cancelButton">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Script -->
+<script>
+  // Function to fetch and crop image from a URL
+  function fetchAndCropImage(url, targetWidth, targetHeight) {
+    fetch(url)
+      .then(response => response.blob())
+      .then(blob => {
+        const img = new Image();
+        const imgUrl = URL.createObjectURL(blob);
+        img.src = imgUrl;
+        img.onload = () => {
+          const aspectRatio = targetWidth / targetHeight;
+          let canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          let ctx = canvas.getContext('2d');
+
+          const imgWidth = img.width;
+          const imgHeight = img.height;
+          let sx, sy, sWidth, sHeight;
+
+          if (imgWidth / imgHeight > aspectRatio) {
+            sHeight = imgHeight;
+            sWidth = imgHeight * aspectRatio;
+            sx = (imgWidth - sWidth) / 2;
+            sy = 0;
+          } else {
+            sWidth = imgWidth;
+            sHeight = imgWidth / aspectRatio;
+            sx = 0;
+            sy = (imgHeight - sHeight) / 2;
+          }
+
+          ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight);
+          document.getElementById('image').src = canvas.toDataURL();
+        };
+      })
+      .catch(err => {
+        console.error("Error fetching image", err);
+      });
+  }
+
+  // Initial image fetch
+  const imageUrl = "https://images.unsplash.com/photo-1529778873920-4da4926a72c2?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y3V0ZSUyMGNhdHxlbnwwfHwwfHx8MA%3D%3D";
+  fetchAndCropImage(imageUrl, 150, 325);
+
+  // Browse button event listener
+  document.getElementById('browseButton').addEventListener('click', () => {
+    const fileType = document.querySelector('input[name="fileType"]:checked').value;
+    if (fileType === 'file') {
+      // Trigger file selection dialog
+      alert("Open file dialog for single file (This needs file input in a real scenario)");
+    } else if (fileType === 'directory') {
+      // Trigger directory selection dialog
+      alert("Open directory selection dialog (This needs directory selection in a real scenario)");
+    }
+  });
+
+  // Convert button event listener
+  document.getElementById('convertButton').addEventListener('click', () => {
+    alert("Processing conversion (Implement your logic here)");
+  });
+
+  // Cancel button event listener
+  document.getElementById('cancelButton').addEventListener('click', () => {
+    window.close();  // Close the window (for desktop apps or browser)
+  });
+</script>
+
+</body>
+</html>
